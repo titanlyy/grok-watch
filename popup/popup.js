@@ -189,10 +189,12 @@ async function loadData(forceRefresh = false) {
 
   if (!forceRefresh) {
     const stored = await chrome.storage.local.get("usage");
-    if (stored.usage && stored.usage.ok && Date.now() - stored.usage.fetchedAt < CACHE_MS) {
+    if (stored.usage && stored.usage.ok) {
       renderAll(stored.usage);
-      btn.classList.remove("spinning");
-      return;
+      if (Date.now() - stored.usage.fetchedAt < CACHE_MS) {
+        btn.classList.remove("spinning");
+        return;
+      }
     }
   }
 
