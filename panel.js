@@ -82,7 +82,7 @@ function mountPanel() {
 function placePanel() {
   const root = shadowRoot && shadowRoot.getElementById("root");
   if (!root) return;
-  const width = panelSettings.collapsed ? 108 : 248;
+  const width = panelSettings.collapsed ? 136 : 300;
   let left = panelSettings.left;
   const top = Number.isFinite(panelSettings.top) ? panelSettings.top : 110;
   if (left == null) left = Math.max(8, window.innerWidth - width - 28);
@@ -332,45 +332,46 @@ const PANEL_CSS = `
     box-shadow: 0 0 0 1px rgba(255, 43, 214, 0.18), 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 24px rgba(61, 255, 242, 0.12);
     clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
   }
-  .card { width: 248px; max-height: 70vh; display: flex; flex-direction: column; }
+  .card { width: 300px; max-height: 72vh; display: flex; flex-direction: column; }
   .head {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    padding: 8px 8px 7px 10px; cursor: grab; user-select: none;
+    padding: 10px 10px 9px 12px; cursor: grab; user-select: none;
     border-bottom: 1px solid rgba(61, 255, 242, 0.18);
   }
   .head:active { cursor: grabbing; }
   .title {
     font-family: ui-monospace, "SF Mono", monospace;
-    font-size: 11px; letter-spacing: 0.14em; font-weight: 800;
+    font-size: 14px; letter-spacing: 0.12em; font-weight: 800;
     display: flex; align-items: center; gap: 6px;
   }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: #3dfff2; box-shadow: 0 0 8px #3dfff2; display: inline-block; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #3dfff2; box-shadow: 0 0 8px #3dfff2; display: inline-block; }
   .tools { display: flex; gap: 4px; }
   .tools button, .chip-btn {
     font: inherit; color: #e9fff8; cursor: pointer;
   }
   .tools button {
-    width: 22px; height: 22px; border-radius: 6px;
+    width: 28px; height: 28px; border-radius: 6px;
     border: 1px solid rgba(61, 255, 242, 0.35);
     background: rgba(61, 255, 242, 0.08);
+    font-size: 16px;
     line-height: 1;
   }
   .tools button:hover { border-color: #ff2bd6; color: #fff; }
-  .body { padding: 8px 10px 10px; overflow: auto; display: flex; flex-direction: column; gap: 7px; }
+  .body { padding: 10px 12px 12px; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
   .plan, .muted, .detail, .row span {
     font-family: ui-monospace, "SF Mono", monospace;
-    font-size: 10px; color: #89a0b8;
+    font-size: 13px; color: #c5d4e4; line-height: 1.35;
   }
   .muted { padding: 4px 0; }
   .row { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-  .row strong { font-family: ui-monospace, "SF Mono", monospace; font-size: 13px; color: #fff; text-shadow: 0 0 10px rgba(61, 255, 242, 0.45); }
-  .track { height: 5px; border-radius: 99px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 4px; }
-  .track.thin { height: 3px; }
+  .row strong { font-family: ui-monospace, "SF Mono", monospace; font-size: 18px; color: #fff; text-shadow: 0 0 10px rgba(61, 255, 242, 0.45); }
+  .track { height: 6px; border-radius: 99px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 5px; }
+  .track.thin { height: 4px; }
   .fill { height: 100%; background: linear-gradient(90deg, #ff2bd6, #3dfff2 60%, #d6ff4a); box-shadow: 0 0 8px rgba(61, 255, 242, 0.7); }
   .chip-btn {
-    width: 108px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-    padding: 8px 10px; cursor: grab; text-align: left;
+    width: 136px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    padding: 10px 12px; cursor: grab; text-align: left;
   }
-  .chip-btn strong { font-family: ui-monospace, "SF Mono", monospace; font-size: 16px; color: #fff; }
-  .chip-kicker { font-family: ui-monospace, "SF Mono", monospace; font-size: 9px; letter-spacing: 0.16em; color: #ff2bd6; }
+  .chip-btn strong { font-family: ui-monospace, "SF Mono", monospace; font-size: 22px; color: #fff; }
+  .chip-kicker { font-family: ui-monospace, "SF Mono", monospace; font-size: 12px; letter-spacing: 0.14em; color: #ff2bd6; }
 `;

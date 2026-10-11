@@ -7,7 +7,7 @@
   --amber: #ffb020;
   --danger: #ff3864;
   --text: #e9fff8;
-  --muted: #89a0b8;
+  --muted: #b7c6d6;
   --line: rgba(61, 255, 242, 0.28);
   --card: rgba(8, 12, 24, 0.88);
 }
@@ -15,13 +15,13 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  width: 408px;
+  width: 460px;
   min-height: 210px;
-  max-height: 600px;
+  max-height: 640px;
   overflow: auto;
   color: var(--text);
   font-family: "Segoe UI", system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   background:
     radial-gradient(90% 50% at 0% 0%, rgba(255, 43, 214, 0.22), transparent 46%),
     radial-gradient(80% 45% at 100% 0%, rgba(61, 255, 242, 0.16), transparent 42%),
@@ -131,8 +131,8 @@ body.is-live .kicker { color: var(--neon); }
   align-items: center;
   gap: 6px;
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: 13px;
+  letter-spacing: 0.12em;
   color: var(--magenta);
 }
 
@@ -152,7 +152,7 @@ body.is-live .live-dot {
 
 .brand-title {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.14em;
   line-height: 1.15;
@@ -166,7 +166,7 @@ body.is-live .live-dot {
 .brand-sub {
   margin-top: 2px;
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 10px;
+  font-size: 13px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -225,8 +225,8 @@ section[hidden],
   background: rgba(255, 56, 100, 0.1);
   color: #ffd0dc;
   border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
+  padding: 10px 12px;
+  font-size: 15px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -244,7 +244,7 @@ section[hidden],
   border: 0;
   color: var(--neon);
   font: inherit;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   text-decoration: underline;
 }
@@ -268,7 +268,7 @@ section[hidden],
   align-items: center;
   gap: 8px;
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
@@ -283,7 +283,7 @@ section[hidden],
 
 .num {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 40px;
+  font-size: 48px;
   font-weight: 750;
   line-height: 0.95;
   color: #fff;
@@ -296,7 +296,7 @@ section[hidden],
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
   color: var(--muted);
   letter-spacing: 0.08em;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .track {
@@ -336,7 +336,7 @@ section[hidden],
   gap: 8px;
   margin-top: 6px;
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 10px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -344,10 +344,10 @@ section[hidden],
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 99px;
   border: 1px solid transparent;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -361,8 +361,8 @@ section[hidden],
   align-items: center;
   gap: 8px;
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-size: 12px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--magenta);
 }
@@ -398,7 +398,7 @@ section[hidden],
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 13px;
   color: var(--muted);
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
 }
@@ -420,7 +420,7 @@ section[hidden],
 
 .row-name {
   font-weight: 650;
-  font-size: 12px;
+  font-size: 15px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -428,7 +428,7 @@ section[hidden],
 
 .row-meta {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 10px;
+  font-size: 13px;
   color: var(--muted);
   text-align: right;
 }
@@ -441,15 +441,15 @@ section[hidden],
 .empty-note {
   text-align: center;
   color: var(--muted);
-  font-size: 12px;
-  padding: 8px 4px;
+  font-size: 15px;
+  padding: 10px 4px;
 }
 
 footer {
   text-align: center;
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 9px;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  letter-spacing: 0.04em;
   color: rgba(137, 160, 184, 0.75);
 }
 
@@ -466,10 +466,10 @@ footer {
 }
 
 .toggle-copy { display: flex; flex-direction: column; gap: 2px; }
-.toggle-copy strong { font-size: 12px; letter-spacing: 0.04em; }
+.toggle-copy strong { font-size: 15px; letter-spacing: 0.04em; }
 .toggle-copy span {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  font-size: 10px;
+  font-size: 13px;
   color: var(--muted);
 }
 
