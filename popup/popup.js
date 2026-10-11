@@ -283,9 +283,21 @@ async function loadData(forceRefresh = false) {
 }
 
 loadData();
+loadPanelToggle();
 document.getElementById("refreshBtn").addEventListener("click", () => loadData(true));
 document.getElementById("openGrok").addEventListener("click", () => {
   chrome.tabs.create({ url: "https://grok.com" });
+});
+document.getElementById("panelToggle").addEventListener("change", async (event) => {
+  const stored = await chrome.storage.local.get("panelSettings");
+  const next = {
+    collapsed: false,
+    top: 110,
+    left: null,
+    ...(stored.panelSettings || {}),
+    enabled: event.target.checked
+  };
+  await chrome.storage.local.set({ panelSettings: next });
 });
 setInterval(() => {
   tickClocks();
@@ -295,3 +307,13 @@ setInterval(() => {
     document.getElementById("fetchedAt").textContent = plan + "updated " + timeAgo(stored.usage.fetchedAt);
   });
 }, 1000);
+
+async function loadPanelToggle() {
+  const stored = await chrome.storage.local.get("panelSettings");
+  document.getElementById("panelToggle").checked = !!(stored.panelSettings && stored.panelSettings.enabled);
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes.panelSettings) return;
+    const next = changes.panelSettings.newValue;
+    document.getElementById("panelToggle").checked = !!(next && next.enabled);
+  });
+}

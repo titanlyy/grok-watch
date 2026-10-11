@@ -1,6 +1,6 @@
 # Grok Watch
 
-Chrome toolbar popup for Grok usage. Dark cyberpunk dashboard, no floating panel.
+Chrome toolbar popup for Grok usage, plus an optional floating panel on grok.com.
 
 The look is original. The metering follows the same grok.com calls used by [Grok Usage Watch](https://github.com/JoshuaWang2211/grok-usage-watch), with extra breakdowns cross-checked against Grok Quota Display Pro, the nisc / BlueSkyXN rate-limit scripts, and the public credits protobuf notes (product ids, weekly period, banked resets).
 
@@ -17,6 +17,16 @@ The look is original. The metering follows the same grok.com calls used by [Grok
 Free accounts get the query windows (Fast is the headline). Paid accounts get the weekly pool as the headline, plus any real query windows underneath.
 
 While a refresh is in flight the header orb speeds up — three satellites on a ring, the same kind of “still working” motion as Grok while a prompt is running.
+
+## Floating panel
+
+Off by default. In the popup, turn on **Floating panel**. A draggable card then sits on [grok.com](https://grok.com), the same idea as [Grok Usage Watch](https://github.com/JoshuaWang2211/grok-usage-watch):
+
+- Drag the header to move it. The spot is remembered.
+- **−** collapses it to a small readout. Click that chip to open it again.
+- **↻** refreshes. **×** hides it (same as turning the switch off).
+
+It shows the same numbers as the popup. It does not redeem resets.
 
 ## Install
 

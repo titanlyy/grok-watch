@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Grok Watch",
-  "version": "1.1.0",
-  "description": "Cyberpunk popup for Grok usage: weekly pool, product split, and per-mode query windows.",
+  "version": "1.2.0",
+  "description": "Cyberpunk Grok usage popup, with an optional floating panel on grok.com.",
   "permissions": ["storage"],
   "host_permissions": ["https://grok.com/*"],
   "background": {
@@ -11,7 +11,7 @@
   "content_scripts": [
     {
       "matches": ["https://grok.com/*"],
-      "js": ["content-script.js"],
+      "js": ["content-script.js", "panel.js"],
       "run_at": "document_idle"
     }
   ],
