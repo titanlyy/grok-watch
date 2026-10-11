@@ -82,13 +82,30 @@ function mountPanel() {
 function placePanel() {
   const root = shadowRoot && shadowRoot.getElementById("root");
   if (!root) return;
-  const width = panelSettings.collapsed ? 136 : 300;
+  const width = panelSettings.collapsed ? 136 : panelWidth();
   let left = panelSettings.left;
   const top = Number.isFinite(panelSettings.top) ? panelSettings.top : 110;
   if (left == null) left = Math.max(8, window.innerWidth - width - 28);
   const box = clampBox(top, left, width, 36);
   root.style.top = box.top + "px";
   root.style.left = box.left + "px";
+  if (panelSettings.collapsed) {
+    root.style.width = "";
+    root.style.height = "";
+    return;
+  }
+  root.style.width = width + "px";
+  root.style.height = panelSettings.height ? panelSettings.height + "px" : "";
+}
+
+function panelWidth() {
+  const saved = Number(panelSettings.width);
+  if (Number.isFinite(saved) && saved >= 260) return saved;
+  return 300;
+}
+
+function clampSize(value, min, max) {
+  return Math.min(Math.max(min, value), Math.max(min, max));
 }
 
 function clampBox(top, left, width, height) {
@@ -141,6 +158,10 @@ function onPanelClick(event) {
 
 function onPointerDown(event) {
   if (event.button !== 0) return;
+  if (event.target.closest("[data-act='resize']")) {
+    startResize(event);
+    return;
+  }
   if (event.target.closest("[data-act]")) return;
   if (!event.target.closest("[data-drag]")) return;
   const root = shadowRoot.getElementById("root");
@@ -168,6 +189,35 @@ function onPointerDown(event) {
       return;
     }
     savePanel({ top: panelSettings.top, left: panelSettings.left });
+  };
+  root.addEventListener("pointermove", move);
+  root.addEventListener("pointerup", up);
+}
+
+function startResize(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const root = shadowRoot.getElementById("root");
+  const rect = root.getBoundingClientRect();
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const startW = rect.width;
+  const startH = rect.height;
+  root.classList.add("is-resized");
+  root.setPointerCapture(event.pointerId);
+
+  const move = (ev) => {
+    const width = clampSize(startW + ev.clientX - startX, 260, window.innerWidth - rect.left - 8);
+    const height = clampSize(startH + ev.clientY - startY, 160, window.innerHeight - rect.top - 8);
+    root.style.width = width + "px";
+    root.style.height = height + "px";
+    panelSettings.width = Math.round(width);
+    panelSettings.height = Math.round(height);
+  };
+  const up = () => {
+    root.removeEventListener("pointermove", move);
+    root.removeEventListener("pointerup", up);
+    savePanel({ width: panelSettings.width, height: panelSettings.height });
   };
   root.addEventListener("pointermove", move);
   root.addEventListener("pointerup", up);
@@ -203,7 +253,8 @@ function expandedHtml(payload) {
         <button type="button" data-act="hide" title="Hide panel">×</button>
       </div>
     </div>
-    <div class="body">${bodyHtml(payload)}</div>`;
+    <div class="body">${bodyHtml(payload)}</div>
+    <div class="grip" data-act="resize" title="Drag to resize"></div>`;
 }
 
 function bodyHtml(payload) {
@@ -260,7 +311,10 @@ function line(label, value, usedPct) {
   const width = Math.max(0, Math.min(100, Number(usedPct) || 0));
   return `
     <div class="line">
-      <div class="row"><span>${esc(label)}</span><span>${esc(value)}</span></div>
+      <div class="row">
+        <span class="name" title="${esc(label)}">${esc(label)}</span>
+        <span class="val">${esc(value)}</span>
+      </div>
       <div class="track thin"><div class="fill" style="width:${width}%"></div></div>
     </div>`;
 }
@@ -330,9 +384,18 @@ const PANEL_CSS = `
     background: rgba(6, 10, 20, 0.94);
     border: 1px solid rgba(61, 255, 242, 0.45);
     box-shadow: 0 0 0 1px rgba(255, 43, 214, 0.18), 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 24px rgba(61, 255, 242, 0.12);
-    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
   }
-  .card { width: 300px; max-height: 72vh; display: flex; flex-direction: column; }
+  .chip-btn { clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+  .card {
+    width: 300px;
+    min-width: 260px;
+    min-height: 160px;
+    max-height: calc(100vh - 16px);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
   .head {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
     padding: 10px 10px 9px 12px; cursor: grab; user-select: none;
@@ -357,14 +420,34 @@ const PANEL_CSS = `
     line-height: 1;
   }
   .tools button:hover { border-color: #ff2bd6; color: #fff; }
-  .body { padding: 10px 12px 12px; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+  .body { padding: 10px 12px 18px; overflow: auto; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
   .plan, .muted, .detail, .row span {
     font-family: ui-monospace, "SF Mono", monospace;
     font-size: 13px; color: #c5d4e4; line-height: 1.35;
   }
+  .plan { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .muted { padding: 4px 0; }
-  .row { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .row { display: flex; justify-content: space-between; gap: 10px; align-items: center; min-width: 0; }
+  .row .name {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .row .val, .row strong { flex: 0 0 auto; white-space: nowrap; }
   .row strong { font-family: ui-monospace, "SF Mono", monospace; font-size: 18px; color: #fff; text-shadow: 0 0 10px rgba(61, 255, 242, 0.45); }
+  .grip {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 16px;
+    height: 16px;
+    cursor: nwse-resize;
+    z-index: 2;
+    background:
+      linear-gradient(135deg, transparent 0 45%, rgba(61, 255, 242, 0.95) 45% 58%, transparent 58% 68%, rgba(61, 255, 242, 0.95) 68% 80%, transparent 80%);
+  }
   .track { height: 6px; border-radius: 99px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 5px; }
   .track.thin { height: 4px; }
   .fill { height: 100%; background: linear-gradient(90deg, #ff2bd6, #3dfff2 60%, #d6ff4a); box-shadow: 0 0 8px rgba(61, 255, 242, 0.7); }

@@ -22,7 +22,8 @@ While a refresh is in flight the header orb speeds up — three satellites on a 
 
 Off by default. In the popup, turn on **Floating panel**. A draggable card then sits on [grok.com](https://grok.com), the same idea as [Grok Usage Watch](https://github.com/JoshuaWang2211/grok-usage-watch):
 
-- Drag the header to move it. The spot is remembered.
+- Drag the header to move it. Drag the corner to resize. Both are remembered.
+- Long names, like merged query modes, stay on one line and clip. Hover a name to read it all.
 - **−** collapses it to a small readout. Click that chip to open it again.
 - **↻** refreshes. **×** hides it (same as turning the switch off).
 
