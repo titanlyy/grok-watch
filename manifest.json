@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Grok Watch",
-  "version": "1.0.0",
-  "description": "A sleek popup dashboard for your Grok usage limits.",
+  "version": "1.1.0",
+  "description": "Cyberpunk popup for Grok usage: weekly pool, product split, and per-mode query windows.",
   "permissions": ["storage"],
   "host_permissions": ["https://grok.com/*"],
   "background": {

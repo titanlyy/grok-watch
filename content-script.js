@@ -1,5 +1,13 @@
-// Runs on grok.com so usage calls use the page session and origin.
-// No UI is injected — the popup is the only surface.
+const GRPC_HEADERS = {
+  "Content-Type": "application/grpc-web+proto",
+  "X-Grpc-Web": "1",
+  "Connect-Protocol-Version": "1"
+};
+
+const RESET_PATHS = [
+  "/grok_api_v2.ConsumerUiSvc/GetRemainingResets",
+  "/prod_mc_billing.ConsumerUiSvc/GetRemainingResets"
+];
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (!msg || msg.type !== "PAGE_FETCH") return;
@@ -23,7 +31,7 @@ async function pageFetch(msg) {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        requestKind: "DEFAULT",
+        requestKind: msg.requestKind || "DEFAULT",
         modelName: msg.model
       })
     });
@@ -36,15 +44,28 @@ async function pageFetch(msg) {
       {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/grpc-web+proto",
-          "X-Grpc-Web": "1"
-        },
+        headers: GRPC_HEADERS,
         body: new Uint8Array(5)
       }
     );
     const bytes = Array.from(new Uint8Array(await response.arrayBuffer()));
     return { ok: true, status: response.status, bytes };
+  }
+
+  if (msg.kind === "resets") {
+    let last = { ok: false, status: 0 };
+    for (const path of RESET_PATHS) {
+      const response = await fetch("https://grok.com" + path, {
+        method: "POST",
+        credentials: "include",
+        headers: GRPC_HEADERS,
+        body: new Uint8Array(5)
+      });
+      const bytes = Array.from(new Uint8Array(await response.arrayBuffer()));
+      last = { ok: true, status: response.status, bytes };
+      if (response.ok && bytes.length > 5) return last;
+    }
+    return last;
   }
 
   return { ok: false, error: "unknown request" };

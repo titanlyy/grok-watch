@@ -7,33 +7,22 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
+  <div class="grid" aria-hidden="true"></div>
+  <div class="scanlines" aria-hidden="true"></div>
   <div class="shell">
     <header>
+      <div class="orb" id="orb" aria-hidden="true">
+        <span class="orb-halo"></span>
+        <span class="orb-ring"></span>
+        <span class="orbit a"><i></i></span>
+        <span class="orbit b"><i></i></span>
+        <span class="orbit c"><i></i></span>
+        <span class="orb-core"></span>
+      </div>
       <div class="brand">
-        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="12" cy="12" r="9.25" stroke="url(#ring)" stroke-width="1.6"/>
-          <path d="M12 12 L12 6.5" stroke="url(#hand)" stroke-width="1.7" stroke-linecap="round"/>
-          <path d="M12 12 L16.2 14.2" stroke="url(#hand2)" stroke-width="1.7" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="1.35" fill="#7dd3fc"/>
-          <defs>
-            <linearGradient id="ring" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#38bdf8"/>
-              <stop offset="100%" stop-color="#818cf8"/>
-            </linearGradient>
-            <linearGradient id="hand" x1="12" y1="6" x2="12" y2="12" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#38bdf8"/>
-              <stop offset="100%" stop-color="#4ade80"/>
-            </linearGradient>
-            <linearGradient id="hand2" x1="12" y1="12" x2="16" y2="14" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#818cf8"/>
-              <stop offset="100%" stop-color="#38bdf8"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <div>
-          <div class="brand-title">Grok Watch</div>
-          <div class="brand-sub" id="fetchedAt">Loading…</div>
-        </div>
+        <div class="kicker"><span class="live-dot"></span><span id="kickerText">UPLINK STANDBY</span></div>
+        <div class="brand-title">GROK WATCH</div>
+        <div class="brand-sub" id="fetchedAt">acquiring signal…</div>
       </div>
       <button class="refresh-btn" id="refreshBtn" title="Refresh now" type="button">
         <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -44,21 +33,33 @@
       </button>
     </header>
 
+    <div class="eq" id="eq" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
     <div class="error-banner" id="errorBanner" hidden>
       <span id="errorText">Could not read Grok usage.</span>
       <button class="linkish" id="openGrok" type="button" hidden>Open grok.com</button>
     </div>
+    <div class="stale-note" id="staleNote" hidden>Link dropped — holding the last snapshot.</div>
 
-    <div class="stale-note" id="staleNote" hidden>Couldn’t refresh — showing the last snapshot.</div>
+    <section id="hero"></section>
+    <section id="spectrumWrap" hidden>
+      <div class="divider">pool composition</div>
+      <div class="spectrum" id="spectrum"></div>
+      <div class="legend" id="legend"></div>
+      <div class="rows" id="productRows"></div>
+    </section>
+    <section id="windowsWrap" hidden>
+      <div class="divider">query windows</div>
+      <div class="rows" id="windows"></div>
+    </section>
+    <section id="resetsWrap" hidden>
+      <div class="divider">banked resets</div>
+      <div class="rows" id="resets"></div>
+    </section>
 
-    <section class="core-grid" id="coreGrid"></section>
-
-    <div class="divider-label" id="divider" hidden>Product breakdown</div>
-    <section class="sources-section" id="sourcesSection"></section>
-
-    <footer>
-      Session on <code>grok.com</code> · stays in this browser
-    </footer>
+    <footer>grok.com session · local only · no reset is spent from here</footer>
   </div>
   <script src="popup.js"></script>
 </body>

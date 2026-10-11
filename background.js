@@ -2,17 +2,31 @@
 // Paid weekly pool + free Fast quota follow the same endpoints as
 // Joshua Wang's Grok Usage Watch (MIT). See NOTICE.md.
 
-const MODELS = [{ key: "grok-3", label: "Fast" }];
+const PROBES = [
+  { model: "grok-3", requestKind: "DEFAULT", label: "Fast" },
+  { model: "grok-3", requestKind: "REASONING", label: "Think" },
+  { model: "grok-3", requestKind: "DEEPSEARCH", label: "DeepSearch" },
+  { model: "grok-3", requestKind: "DEEPERSEARCH", label: "DeeperSearch" },
+  { model: "grok-4", requestKind: "DEFAULT", label: "Expert" },
+  { model: "grok-4-auto", requestKind: "DEFAULT", label: "Auto" },
+  { model: "grok-4-heavy", requestKind: "DEFAULT", label: "Heavy" }
+];
 
 const F_USAGE_PERCENT = 1;
+const F_PERIOD_START = 4;
 const F_PERIOD_END = 5;
 const F_PRODUCT_USAGE = 7;
 
 const PRODUCT_LABELS = {
+  0: "3rd Party",
+  1: "API",
   2: "Grok Build",
+  3: "Plugins",
   4: "Chat",
   5: "Imagine",
-  6: "Voice"
+  6: "Voice",
+  7: "App Builder",
+  8: "Automations"
 };
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -50,17 +64,7 @@ async function collectUsage() {
         if (previous && previous.kind === "paid") return { ...previous, stale: true };
         return { ok: false, code: "unavailable" };
       }
-      const payload = {
-        ok: true,
-        kind: "paid",
-        plan: humanizePlan(tier),
-        paid,
-        buckets: [],
-        fetchedAt: Date.now(),
-        stale: false
-      };
-      await chrome.storage.local.set({ usage: payload });
-      return payload;
+      return await assemble("paid", humanizePlan(tier), paid);
     } catch (err) {
       if (err && err.code === "unauthorized") return { ok: false, code: "unauthorized" };
       if (previous && previous.kind === "paid") return { ...previous, stale: true };
@@ -70,12 +74,14 @@ async function collectUsage() {
 
   try {
     const buckets = await checkRateLimits();
+    const resets = await checkResets();
     const payload = {
       ok: true,
       kind: "free",
       plan: "Free",
       paid: null,
       buckets,
+      resets,
       fetchedAt: Date.now(),
       stale: false
     };
@@ -102,35 +108,50 @@ async function fetchActiveSubscription() {
   return list.find((entry) => entry && entry.status === "SUBSCRIPTION_STATUS_ACTIVE") || false;
 }
 
+async function assemble(kind, plan, paid) {
+  let buckets = [];
+  try {
+    buckets = await checkRateLimits();
+  } catch (err) {
+    if (err && err.code === "unauthorized") throw err;
+    buckets = [];
+  }
+  const resets = await checkResets();
+  const payload = {
+    ok: true,
+    kind,
+    plan,
+    paid,
+    buckets,
+    resets,
+    fetchedAt: Date.now(),
+    stale: false
+  };
+  await chrome.storage.local.set({ usage: payload });
+  return payload;
+}
+
 async function checkRateLimits() {
+  const settled = await Promise.all(PROBES.map((probe) => probeLimit(probe)));
   const buckets = [];
   let answered = false;
 
-  for (const model of MODELS) {
-    const res = await request("rate-limits", { model: model.key });
-    if (res.status === 401 || res.status === 403) {
+  for (const item of settled) {
+    if (item === "unauthorized") {
       const error = new Error("unauthorized");
       error.code = "unauthorized";
       throw error;
     }
-    if (!res.okTransport || res.status < 200 || res.status >= 300) continue;
+    if (!item) continue;
     answered = true;
-    const data = parseJson(res.text);
-    if (!data) continue;
-
-    const total = Number(data.totalQueries);
-    const remaining = Number(data.remainingQueries);
-    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(remaining)) continue;
-
-    const percent = Math.round((remaining / total) * 100);
-    buckets.push({
-      key: model.key,
-      label: model.label,
-      remaining,
-      total,
-      percent,
-      used: 100 - percent
-    });
+    if (!item.bucket) continue;
+    const existing = buckets.find((row) => row.signature === item.bucket.signature);
+    if (existing) {
+      if (!existing.labels.includes(item.bucket.label)) existing.labels.push(item.bucket.label);
+      existing.label = existing.labels.join(" · ");
+      continue;
+    }
+    buckets.push(item.bucket);
   }
 
   if (!answered && buckets.length === 0) {
@@ -139,7 +160,51 @@ async function checkRateLimits() {
     throw error;
   }
 
-  return buckets;
+  return buckets.map(({ signature, labels, ...bucket }) => bucket);
+}
+
+async function probeLimit(probe) {
+  const res = await request("rate-limits", {
+    model: probe.model,
+    requestKind: probe.requestKind
+  });
+  if (res.status === 401 || res.status === 403) return "unauthorized";
+  if (!res.okTransport || res.status < 200 || res.status >= 300) return null;
+  const data = parseJson(res.text);
+  if (!data || typeof data !== "object") return { bucket: null };
+
+  const total = Number(data.totalQueries);
+  const remaining = Number(data.remainingQueries);
+  if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(remaining)) return { bucket: null };
+
+  const windowSeconds = Number(data.windowSizeSeconds);
+  const windowOk = Number.isFinite(windowSeconds) && windowSeconds > 0 ? windowSeconds : null;
+  const percent = Math.round((remaining / total) * 100);
+  return {
+    bucket: {
+      key: probe.model + ":" + probe.requestKind,
+      label: probe.label,
+      labels: [probe.label],
+      model: probe.model,
+      requestKind: probe.requestKind,
+      remaining,
+      total,
+      percent,
+      used: 100 - percent,
+      windowSeconds: windowOk,
+      signature: remaining + "|" + total + "|" + (windowOk || "")
+    }
+  };
+}
+
+async function checkResets() {
+  try {
+    const res = await request("resets");
+    if (!res.okTransport || res.status < 200 || res.status >= 300 || !res.bytes) return null;
+    return parseRemainingResets(res.bytes);
+  } catch {
+    return null;
+  }
 }
 
 async function checkPaidUsage() {
@@ -166,11 +231,15 @@ function readPaidUsage(bytes) {
 
   const config = decodeProto(configBytes);
 
-  let resetAt = null;
-  const periodEnd = first(config, F_PERIOD_END);
-  if (periodEnd) {
-    const seconds = first(decodeProto(periodEnd), 1);
-    if (Number.isFinite(seconds) && seconds > 0) resetAt = seconds * 1000;
+  let resetAt = readTimestamp(first(config, F_PERIOD_END));
+  let periodStart = readTimestamp(first(config, F_PERIOD_START));
+  const periodWrap = first(config, F_PERIOD_START);
+  if (periodWrap instanceof Uint8Array) {
+    const inner = decodeProto(periodWrap);
+    const innerEnd = readTimestamp(first(inner, 3));
+    const innerStart = readTimestamp(first(inner, 2));
+    if (innerEnd && !resetAt) resetAt = innerEnd;
+    if (innerStart) periodStart = innerStart;
   }
 
   const hasProductField = (config[F_PRODUCT_USAGE] || []).length > 0;
@@ -181,8 +250,8 @@ function readPaidUsage(bytes) {
       const percent = first(parsed, 2);
       return {
         id,
-        label: PRODUCT_LABELS[id] || "Other",
-        percent: Number.isFinite(percent) ? percent : 0
+        label: PRODUCT_LABELS[id] || "Product " + id,
+        percent: Number.isFinite(percent) ? Math.round(percent * 10) / 10 : 0
       };
     })
     .filter((product) => product.percent > 0)
@@ -196,6 +265,7 @@ function readPaidUsage(bytes) {
     used: Math.round(used * 10) / 10,
     remaining: Math.round((100 - used) * 10) / 10,
     resetAt,
+    periodStart,
     products
   };
 }
@@ -239,7 +309,10 @@ async function requestDirect(kind, extra) {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestKind: "DEFAULT", modelName: extra.model })
+        body: JSON.stringify({
+          requestKind: (extra && extra.requestKind) || "DEFAULT",
+          modelName: extra.model
+        })
       });
       return { ok: true, status: response.status, text: await response.text() };
     }
@@ -262,6 +335,7 @@ async function requestDirect(kind, extra) {
         bytes: Array.from(new Uint8Array(await response.arrayBuffer()))
       };
     }
+    if (kind === "resets") return fetchResetFrame();
   } catch (err) {
     return { ok: false, status: 0, error: String(err && err.message ? err.message : err) };
   }
@@ -381,4 +455,100 @@ function prettyToken(raw) {
   const lower = cleaned.toLowerCase();
   if (known[lower]) return known[lower];
   return cleaned.replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
+}
+
+const RESET_PATHS = [
+  "https://grok.com/grok_api_v2.ConsumerUiSvc/GetRemainingResets",
+  "https://grok.com/prod_mc_billing.ConsumerUiSvc/GetRemainingResets"
+];
+
+function grpcHeaders() {
+  return {
+    "Content-Type": "application/grpc-web+proto",
+    "X-Grpc-Web": "1",
+    "Connect-Protocol-Version": "1"
+  };
+}
+
+async function fetchResetFrame() {
+  let last = { ok: false, status: 0 };
+  for (const url of RESET_PATHS) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: grpcHeaders(),
+        body: new Uint8Array(5)
+      });
+      const bytes = Array.from(new Uint8Array(await response.arrayBuffer()));
+      last = { ok: true, status: response.status, bytes };
+      if (response.ok && bytes.length > 5) return last;
+    } catch {
+      // Try the other service name.
+    }
+  }
+  return last;
+}
+
+function readTimestamp(value) {
+  if (!(value instanceof Uint8Array)) return null;
+  const fields = decodeProto(value);
+  const seconds = first(fields, 1);
+  if (!Number.isFinite(seconds) || seconds < 1500000000 || seconds > 2200000000) return null;
+  const nanos = first(fields, 2);
+  return seconds * 1000 + (Number.isFinite(nanos) ? nanos / 1e6 : 0);
+}
+
+function parseRemainingResets(bytes) {
+  const frame = firstDataFrame(bytes) || bytes;
+  const tokens = [];
+  collectResetTokens(frame, tokens, 0);
+  const future = tokens.filter((token) => token.expiresAt && token.expiresAt > Date.now());
+  if (!future.length) return null;
+  future.sort((a, b) => a.expiresAt - b.expiresAt);
+  return { availableCount: future.length, expiresAt: future[0].expiresAt };
+}
+
+function collectResetTokens(buf, tokens, depth) {
+  if (depth > 6 || !(buf instanceof Uint8Array) || buf.length < 2) return;
+  let fields;
+  try {
+    fields = decodeProto(buf);
+  } catch {
+    return;
+  }
+  const token = tokenFromFields(fields);
+  if (token) tokens.push(token);
+  for (const values of Object.values(fields)) {
+    if (!Array.isArray(values)) continue;
+    for (const value of values) {
+      if (value instanceof Uint8Array) collectResetTokens(value, tokens, depth + 1);
+    }
+  }
+}
+
+function tokenFromFields(fields) {
+  let tokenId = "";
+  let expiresAt = null;
+  for (const number of [10, 1]) {
+    const raw = first(fields, number);
+    if (!(raw instanceof Uint8Array)) continue;
+    const text = decodeUtf8(raw);
+    if (/^[A-Za-z0-9_-]{8,96}$/.test(text)) tokenId = text;
+  }
+  for (const number of [30, 20, 3, 2]) {
+    const raw = first(fields, number);
+    const ts = readTimestamp(raw);
+    if (ts) expiresAt = ts;
+  }
+  if (!tokenId || !expiresAt) return null;
+  return { tokenId, expiresAt };
+}
+
+function decodeUtf8(bytes) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return "";
+  }
 }

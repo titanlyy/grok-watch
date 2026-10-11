@@ -1,58 +1,44 @@
 # Grok Watch
 
-A Chrome extension that shows your Grok usage in the toolbar popup — the same dark dashboard style as [Perplexity Limits](https://github.com/titanlyy/perplexity-limits), with the monitoring behavior of [Grok Usage Watch](https://github.com/JoshuaWang2211/grok-usage-watch).
+Chrome toolbar popup for Grok usage. Dark cyberpunk dashboard, no floating panel.
 
-There is no floating panel. Click the toolbar icon.
+The look is original. The metering follows the same grok.com calls used by [Grok Usage Watch](https://github.com/JoshuaWang2211/grok-usage-watch), with extra breakdowns cross-checked against Grok Quota Display Pro, the nisc / BlueSkyXN rate-limit scripts, and the public credits protobuf notes (product ids, weekly period, banked resets).
 
 ## What you see
 
-Grok meters free and paid accounts differently. The popup follows whichever one applies.
+| Signal | Source | Shown when |
+| --- | --- | --- |
+| Weekly pool | `GetGrokCreditsConfig` | Paid plan. Percent left, used, period start and reset countdown |
+| Product split | same response, per product | Chat, Imagine, Voice, Grok Build, API, Plugins, App Builder, Automations, and any other id the account reports |
+| Query windows | `POST /rest/rate-limits` | Fast, Think, DeepSearch, DeeperSearch, Expert, Auto, Heavy — only rows the API actually returns. Identical numbers are merged |
+| Window length | `windowSizeSeconds` | Next to each query row, when grok.com sends it |
+| Banked resets | `GetRemainingResets` | Count and soonest expiry. Nothing is redeemed from this extension |
 
-| Account | Popup shows |
-| --- | --- |
-| Free | Fast queries left, out of the window total |
-| Paid plan | Weekly pool — percent left, when it resets, and the split across Chat, Imagine, Voice, and Grok Build |
+Free accounts get the query windows (Fast is the headline). Paid accounts get the weekly pool as the headline, plus any real query windows underneath.
 
-Paid plans share one weekly allowance. A chat costs little; images and video cost more. The product rows are shares of that pool, not separate caps.
+While a refresh is in flight the header orb speeds up — three satellites on a ring, the same kind of “still working” motion as Grok while a prompt is running.
 
 ## Install
 
 1. Clone this repo, or download it as a ZIP and unzip it.
 2. Open `chrome://extensions`.
 3. Turn on **Developer mode**.
-4. Click **Load unpacked** and choose this folder.
+4. **Load unpacked** and choose this folder.
 5. Pin **Grok Watch**.
-6. Be signed in at [grok.com](https://grok.com) in the same browser, then click the icon.
+6. Be signed in at [grok.com](https://grok.com), then click the icon.
 
-If a grok.com tab is already open, the extension reads usage from that page so the request looks like the site itself. Otherwise it calls grok.com directly with your existing session.
+If you already loaded an older build, click **Reload** on the extension card after pulling.
 
-## How it works
-
-```
-manifest.json       Chrome MV3 manifest. Host access is limited to grok.com.
-background.js       Decides free vs paid, fetches usage, caches it locally.
-content-script.js   On grok.com only. No UI. Forwards the page's own session.
-popup/              Toolbar popup: cards, bars, product rows, refresh.
-icons/              Toolbar icons.
-```
-
-- Paid weekly usage comes from `GetGrokCreditsConfig` on grok.com.
-- Free Fast quota comes from `POST /rest/rate-limits`.
-- Which path to use comes from `GET /rest/subscriptions`.
-- Results stay in `chrome.storage.local` for 60 seconds. Nothing is sent anywhere else.
-
-Refresh is the button in the popup. A failed refresh keeps the last good snapshot instead of blanking it. Signing out shows a sign-in prompt immediately.
+If a grok.com tab is open, requests go through that page so they use the site session. Otherwise the extension calls grok.com directly with the same cookies. Results stay in `chrome.storage.local` for 60 seconds.
 
 ## Privacy
 
-- No analytics, no remote code, no extra servers.
-- The only network calls are to `grok.com`, using the session you already have.
-- Usage numbers never leave the browser.
+No analytics and no third-party servers. Calls go only to `grok.com`. Reset tokens are counted, never spent.
 
 ## Credits
 
-- Visual design follows [titanlyy/perplexity-limits](https://github.com/titanlyy/perplexity-limits).
-- Quota detection follows [JoshuaWang2211/grok-usage-watch](https://github.com/JoshuaWang2211/grok-usage-watch) (MIT). See [NOTICE.md](NOTICE.md).
+- [JoshuaWang2211/grok-usage-watch](https://github.com/JoshuaWang2211/grok-usage-watch) (MIT) — weekly pool vs free Fast detection. See [NOTICE.md](NOTICE.md).
+- [titanlyy/perplexity-limits](https://github.com/titanlyy/perplexity-limits) — popup-only dashboard, not an on-page overlay.
 
 ## License
 
