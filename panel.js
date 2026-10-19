@@ -265,6 +265,7 @@ function bodyHtml(payload) {
   }
   const bits = [];
   bits.push(`<div class="plan">${esc(payload.plan || "Grok")}${payload.stale ? " · held" : ""}</div>`);
+  bits.push(botHtml(payload));
   if (payload.kind === "paid" && payload.paid) {
     const used = Number(payload.paid.used) || 0;
     const left = Number.isFinite(Number(payload.paid.remaining)) ? Number(payload.paid.remaining) : Math.max(0, 100 - used);
@@ -295,6 +296,20 @@ function bodyHtml(payload) {
   }
   if (bits.length === 1) bits.push(`<div class="muted">No quota in this response.</div>`);
   return bits.join("");
+}
+
+function botHtml(payload) {
+  const bot = payload && payload.bot;
+  if (bot && Number.isFinite(Number(bot.used))) {
+    const used = Number(bot.used);
+    const left = Number.isFinite(Number(bot.remaining)) ? Number(bot.remaining) : Math.max(0, 100 - used);
+    const label = bot.plan ? "Grok Bot · " + bot.plan : "Grok Bot";
+    return meter(label, amount(left) + "% left", used, footRemain(bot.resetAt));
+  }
+  if (payload && payload.botState === "signed-out") {
+    return `<div class="muted">Grok Bot needs a cursor.com login in this browser.</div>`;
+  }
+  return "";
 }
 
 function meter(label, value, usedPct, detail) {

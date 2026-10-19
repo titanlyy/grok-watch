@@ -9,6 +9,7 @@ The look is original. The metering follows the same grok.com calls used by [Grok
 | Signal | Source | Shown when |
 | --- | --- | --- |
 | Weekly pool | `GetGrokCreditsConfig` | Paid plan. Percent left, used, period start and reset countdown |
+| Grok Bot | `POST https://cursor.com/api/dashboard/get-sand-usage-status` | Separate weekly pool. Shown when this browser is signed in at cursor.com. Not the SuperGrok product split |
 | Product split | same response, per product | Chat, Imagine, Voice, Grok Build, API, Plugins, App Builder, Automations, and any other id the account reports |
 | Query windows | `POST /rest/rate-limits` | Fast, Think, DeepSearch, DeeperSearch, Expert, Auto, Heavy — only rows the API actually returns. Identical numbers are merged |
 | Window length | `windowSizeSeconds` | Next to each query row, when grok.com sends it |
@@ -36,7 +37,9 @@ It shows the same numbers as the popup. It does not redeem resets.
 3. Turn on **Developer mode**.
 4. **Load unpacked** and choose this folder.
 5. Pin **Grok Watch**.
-6. Be signed in at [grok.com](https://grok.com), then click the icon.
+6. Be signed in at [grok.com](https://grok.com). For the Bot meter, also be signed in at [cursor.com](https://cursor.com).
+
+The Bot request is one POST from this extension, using the cursor.com cookie already in the browser. The response stays in `chrome.storage.local`. Nothing is sent to a third party, and no reset or credit is spent.
 
 If you already loaded an older build, click **Reload** on the extension card after pulling.
 
@@ -44,7 +47,7 @@ If a grok.com tab is open, requests go through that page so they use the site se
 
 ## Privacy
 
-No analytics and no third-party servers. Calls go only to `grok.com`. Reset tokens are counted, never spent.
+No analytics. Calls go only to `grok.com` and, for the Bot meter, one POST to `cursor.com`. Reset tokens are counted, never spent.
 
 ## Credits
 

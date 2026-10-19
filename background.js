@@ -75,7 +75,7 @@ async function collectUsage() {
   try {
     const buckets = await checkRateLimits();
     const resets = await checkResets();
-    const payload = {
+    const payload = await attachBot({
       ok: true,
       kind: "free",
       plan: "Free",
@@ -84,7 +84,7 @@ async function collectUsage() {
       resets,
       fetchedAt: Date.now(),
       stale: false
-    };
+    });
     await chrome.storage.local.set({ usage: payload });
     return payload;
   } catch (err) {
@@ -117,7 +117,7 @@ async function assemble(kind, plan, paid) {
     buckets = [];
   }
   const resets = await checkResets();
-  const payload = {
+  const payload = await attachBot({
     ok: true,
     kind,
     plan,
@@ -126,7 +126,7 @@ async function assemble(kind, plan, paid) {
     resets,
     fetchedAt: Date.now(),
     stale: false
-  };
+  });
   await chrome.storage.local.set({ usage: payload });
   return payload;
 }
@@ -195,6 +195,102 @@ async function probeLimit(probe) {
       signature: remaining + "|" + total + "|" + (windowOk || "")
     }
   };
+}
+
+async function attachBot(payload) {
+  const bot = await checkBotUsage();
+  payload.bot = bot.state === "ok" ? bot.meter : null;
+  payload.botState = bot.state;
+  return payload;
+}
+
+async function checkBotUsage() {
+  try {
+    const response = await fetch("https://cursor.com/api/dashboard/get-sand-usage-status", {
+      method: "POST",
+      credentials: "include",
+      redirect: "manual",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: "{}"
+    });
+    if (
+      response.status === 401 ||
+      response.status === 403 ||
+      response.type === "opaqueredirect" ||
+      (response.status >= 300 && response.status < 400)
+    ) {
+      return { state: "signed-out" };
+    }
+    if (!response.ok) return { state: "unavailable" };
+    const data = parseJson(await response.text());
+    const source = botSource(data);
+    if (!source) return { state: "signed-out" };
+    const used = readBotPercent(source);
+    if (used == null) return { state: "unavailable" };
+    return {
+      state: "ok",
+      meter: {
+        used,
+        remaining: Math.round((100 - used) * 10) / 10,
+        resetAt: readTime(pick(source, ["nextResetTimestampUtc", "next_reset_timestamp_utc"])),
+        periodStart: readTime(pick(source, ["currentPeriodStart", "current_period_start"])),
+        plan: textField(source, ["grokPlanLabel", "grok_plan_label"])
+      }
+    };
+  } catch {
+    return { state: "unavailable" };
+  }
+}
+
+function botSource(data) {
+  if (!data || typeof data !== "object") return null;
+  const candidates = [data, data.status, data.result, data.data, data.usage];
+  for (const item of candidates) {
+    if (item && typeof item === "object" && readBotPercent(item) != null) return item;
+  }
+  return null;
+}
+
+function readBotPercent(source) {
+  const raw = Number(pick(source, ["usagePercent", "usage_percent", "usedPercent", "used_percent"]));
+  if (!Number.isFinite(raw) || raw < 0) return null;
+  const percent = raw <= 1 ? raw * 100 : raw;
+  if (percent > 100) return null;
+  return Math.round(percent * 10) / 10;
+}
+
+function pick(source, keys) {
+  for (const key of keys) {
+    if (source[key] != null && source[key] !== "") return source[key];
+  }
+  return undefined;
+}
+
+function textField(source, keys) {
+  const value = pick(source, keys);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function readTime(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value > 1e12) return value;
+    if (value > 1e9) return value * 1000;
+  }
+  if (typeof value === "string") {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 1e9) return numeric > 1e12 ? numeric : numeric * 1000;
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (typeof value === "object") {
+    const seconds = Number(value.seconds != null ? value.seconds : value.Seconds);
+    if (Number.isFinite(seconds) && seconds > 1e9) return seconds * 1000;
+  }
+  return null;
 }
 
 async function checkResets() {

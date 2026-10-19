@@ -192,6 +192,41 @@ function renderResets(resets) {
     </div>`;
 }
 
+function renderBot(payload) {
+  const wrap = document.getElementById("botWrap");
+  const node = document.getElementById("bot");
+  const bot = payload && payload.bot;
+  if (bot && Number.isFinite(Number(bot.used))) {
+    wrap.hidden = false;
+    const used = Number(bot.used);
+    const remaining = Number.isFinite(Number(bot.remaining)) ? Number(bot.remaining) : Math.max(0, 100 - used);
+    const reset = bot.resetAt
+      ? `<span data-reset="${esc(bot.resetAt)}">${esc(formatRemain(bot.resetAt))}</span>`
+      : "reset unknown";
+    const when = formatWhen(bot.resetAt);
+    node.innerHTML = heroCard(
+      bot.plan ? "Grok Bot · " + bot.plan : "Grok Bot",
+      amount(remaining),
+      "% left",
+      used,
+      when ? esc(when) : esc(amount(used)) + "% used",
+      reset,
+      remaining / 100
+    );
+    return;
+  }
+  if (payload && payload.botState === "signed-out") {
+    wrap.hidden = false;
+    node.innerHTML = `<div class="empty-note">Sign in at cursor.com in this browser to read the Bot meter. <button class="linkish" id="openCursor" type="button">Open cursor.com</button></div>`;
+    document.getElementById("openCursor").addEventListener("click", () => {
+      chrome.tabs.create({ url: "https://cursor.com/bot" });
+    });
+    return;
+  }
+  wrap.hidden = true;
+  node.innerHTML = "";
+}
+
 function renderFree(buckets) {
   document.getElementById("spectrumWrap").hidden = true;
   const list = buckets || [];
@@ -232,6 +267,7 @@ function showError(code) {
   document.getElementById("fetchedAt").textContent = "link down";
   document.getElementById("kickerText").textContent = "UPLINK LOST";
   document.getElementById("hero").innerHTML = "";
+  document.getElementById("botWrap").hidden = true;
   document.getElementById("spectrumWrap").hidden = true;
   document.getElementById("windowsWrap").hidden = true;
   document.getElementById("resetsWrap").hidden = true;
@@ -250,6 +286,7 @@ function renderAll(payload) {
     renderFree(payload.buckets || []);
   }
   renderResets(payload.resets);
+  renderBot(payload);
   paintBars();
   tickClocks();
 }
