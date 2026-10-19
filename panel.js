@@ -307,7 +307,7 @@ function botHtml(payload) {
     return meter(label, amount(left) + "% left", used, footRemain(bot.resetAt));
   }
   if (payload && payload.botState === "signed-out") {
-    return `<div class="muted">Grok Bot needs a cursor.com login in this browser.</div>`;
+    return `<div class="muted">Open cursor.com/dashboard, leave that tab open, then refresh.</div>`;
   }
   return "";
 }

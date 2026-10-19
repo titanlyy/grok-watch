@@ -205,6 +205,31 @@ async function attachBot(payload) {
 }
 
 async function checkBotUsage() {
+  const viaTab = await requestBotViaTab();
+  const response = viaTab || (await requestBotDirect());
+  return interpretBot(response);
+}
+
+async function requestBotViaTab() {
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: "https://cursor.com/*" });
+  } catch {
+    return null;
+  }
+  for (const tab of tabs) {
+    if (!tab.id) continue;
+    try {
+      const response = await chrome.tabs.sendMessage(tab.id, { type: "PAGE_FETCH", kind: "bot" });
+      if (response && response.ok) return response;
+    } catch {
+      // That tab was open before this version loaded.
+    }
+  }
+  return null;
+}
+
+async function requestBotDirect() {
   try {
     const response = await fetch("https://cursor.com/api/dashboard/get-sand-usage-status", {
       method: "POST",
@@ -216,33 +241,35 @@ async function checkBotUsage() {
       },
       body: "{}"
     });
-    if (
-      response.status === 401 ||
-      response.status === 403 ||
-      response.type === "opaqueredirect" ||
-      (response.status >= 300 && response.status < 400)
-    ) {
-      return { state: "signed-out" };
-    }
-    if (!response.ok) return { state: "unavailable" };
-    const data = parseJson(await response.text());
-    const source = botSource(data);
-    if (!source) return { state: "signed-out" };
-    const used = readBotPercent(source);
-    if (used == null) return { state: "unavailable" };
     return {
-      state: "ok",
-      meter: {
-        used,
-        remaining: Math.round((100 - used) * 10) / 10,
-        resetAt: readTime(pick(source, ["nextResetTimestampUtc", "next_reset_timestamp_utc"])),
-        periodStart: readTime(pick(source, ["currentPeriodStart", "current_period_start"])),
-        plan: textField(source, ["grokPlanLabel", "grok_plan_label"])
-      }
+      ok: true,
+      status: response.status,
+      redirected: response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400),
+      text: response.type === "opaqueredirect" ? "" : await response.text()
     };
-  } catch {
-    return { state: "unavailable" };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
   }
+}
+
+function interpretBot(response) {
+  if (!response || !response.ok || response.redirected) return { state: "signed-out" };
+  if (response.status === 401 || response.status === 403) return { state: "signed-out" };
+  if (response.status < 200 || response.status >= 300) return { state: "unavailable" };
+  const source = botSource(parseJson(response.text));
+  if (!source) return { state: "signed-out" };
+  const used = readBotPercent(source);
+  if (used == null) return { state: "unavailable" };
+  return {
+    state: "ok",
+    meter: {
+      used,
+      remaining: Math.round((100 - used) * 10) / 10,
+      resetAt: readTime(pick(source, ["nextResetTimestampUtc", "next_reset_timestamp_utc"])),
+      periodStart: readTime(pick(source, ["currentPeriodStart", "current_period_start"])),
+      plan: textField(source, ["grokPlanLabel", "grok_plan_label"])
+    }
+  };
 }
 
 function botSource(data) {
@@ -256,10 +283,8 @@ function botSource(data) {
 
 function readBotPercent(source) {
   const raw = Number(pick(source, ["usagePercent", "usage_percent", "usedPercent", "used_percent"]));
-  if (!Number.isFinite(raw) || raw < 0) return null;
-  const percent = raw <= 1 ? raw * 100 : raw;
-  if (percent > 100) return null;
-  return Math.round(percent * 10) / 10;
+  if (!Number.isFinite(raw) || raw < 0 || raw > 100) return null;
+  return Math.round(raw * 10) / 10;
 }
 
 function pick(source, keys) {

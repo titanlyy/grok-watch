@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Grok Watch",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Cyberpunk Grok usage popup, with the Grok Bot weekly meter and an optional floating panel.",
   "permissions": ["storage"],
   "host_permissions": ["https://grok.com/*", "https://cursor.com/*"],
@@ -12,6 +12,11 @@
     {
       "matches": ["https://grok.com/*"],
       "js": ["content-script.js", "panel.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://cursor.com/*"],
+      "js": ["cursor-bridge.js"],
       "run_at": "document_idle"
     }
   ],

@@ -37,9 +37,9 @@ It shows the same numbers as the popup. It does not redeem resets.
 3. Turn on **Developer mode**.
 4. **Load unpacked** and choose this folder.
 5. Pin **Grok Watch**.
-6. Be signed in at [grok.com](https://grok.com). For the Bot meter, also be signed in at [cursor.com](https://cursor.com).
+6. Be signed in at [grok.com](https://grok.com). For the Bot meter, also be signed in at [cursor.com/dashboard](https://cursor.com/dashboard) and leave that tab open.
 
-The Bot request is one POST from this extension, using the cursor.com cookie already in the browser. The response stays in `chrome.storage.local`. Nothing is sent to a third party, and no reset or credit is spent.
+The Bot request is a POST made from that dashboard tab, using the cursor.com cookie already in the browser. Opening `https://cursor.com/api/dashboard/get-sand-usage-status` in the address bar is a GET, so the site answers `Method not allowed`. That is not the meter. `https://cursor.com/bot` is not a page.
 
 If you already loaded an older build, click **Reload** on the extension card after pulling.
 

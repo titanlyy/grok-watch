@@ -217,9 +217,9 @@ function renderBot(payload) {
   }
   if (payload && payload.botState === "signed-out") {
     wrap.hidden = false;
-    node.innerHTML = `<div class="empty-note">Sign in at cursor.com in this browser to read the Bot meter. <button class="linkish" id="openCursor" type="button">Open cursor.com</button></div>`;
+    node.innerHTML = `<div class="empty-note">Open the Cursor dashboard while signed in and leave that tab open, then refresh. The API address is not a page — a normal visit is a GET, so it says Method not allowed. <button class="linkish" id="openCursor" type="button">Open dashboard</button></div>`;
     document.getElementById("openCursor").addEventListener("click", () => {
-      chrome.tabs.create({ url: "https://cursor.com/bot" });
+      chrome.tabs.create({ url: "https://cursor.com/dashboard" });
     });
     return;
   }
